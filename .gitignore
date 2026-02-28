@@ -1,0 +1,14 @@
+# Never commit these
+.env
+logs.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
