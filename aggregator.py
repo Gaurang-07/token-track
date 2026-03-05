@@ -58,34 +58,57 @@ def aggregate(logs):
         key=lambda x: x["tokens"], reverse=True
     )[:15]
 
-    # --- Cost estimates (per 1M tokens, rough free-tier pricing) ---
-    # Groq Llama: ~free / Gemini Flash: ~free for our volumes
+    # Cost estimates across paid tiers (per 1M tokens)
+    PRICING = {
+        "groq": {
+            "llama-3.3-70b-versatile": {"input": 0.59, "output": 0.79},
+            "llama-3.1-8b-instant":    {"input": 0.05, "output": 0.08},
+            "mixtral-8x7b-32768":      {"input": 0.24, "output": 0.24},
+            "gemma2-9b-it":            {"input": 0.20, "output": 0.20},
+        },
+        "gemini": {
+            "gemini-2.0-flash":        {"input": 0.10, "output": 0.40},
+            "gemini-2.0-flash-lite":   {"input": 0.075,"output": 0.30},
+            "gemini-2.5-flash":        {"input": 0.15, "output": 0.60},
+        },
+        "openai": {
+            "gpt-4o":                  {"input": 2.50, "output": 10.0},
+            "gpt-4o-mini":             {"input": 0.15, "output": 0.60},
+        }
+    }
+
     cost_by_provider = {}
-    for p, data in providers.items():
-        if "groq" in p.lower():
-            cost = 0.0  # free tier
-        elif "gemini" in p.lower():
-            cost = round(data["total_tokens"] * 0.075 / 1_000_000, 4)
-        else:
-            cost = 0.0
-        cost_by_provider[p] = cost
-    total_cost = round(sum(cost_by_provider.values()), 4)
+    cost_by_model    = {}
+    total_cost       = 0.0
+
+    for r in logs:
+        p = r.get("provider", "unknown")
+        m = r.get("model", "unknown")
+        pricing = PRICING.get(p, {}).get(m, {"input": 0.0, "output": 0.0})
+        cost = (r["input_tokens"]  * pricing["input"]  / 1_000_000 +
+                r["output_tokens"] * pricing["output"] / 1_000_000)
+        cost_by_provider[p] = round(cost_by_provider.get(p, 0) + cost, 6)
+        cost_by_model[m]    = round(cost_by_model.get(m, 0)    + cost, 6)
+        total_cost          += cost
+
+    total_cost = round(total_cost, 6)
 
     return {
         "summary": {
-            "total_tokens":   total_tokens,
-            "total_input":    total_input,
-            "total_output":   total_output,
-            "total_messages": len(logs),
+            "total_tokens":    total_tokens,
+            "total_input":     total_input,
+            "total_output":    total_output,
+            "total_messages":  len(logs),
             "total_providers": len(providers),
-            "total_models":   len(models),
-            "estimated_cost": total_cost,
+            "total_models":    len(models),
+            "estimated_cost":  total_cost,
         },
-        "providers":   providers_list,
-        "models":      models_list,
-        "daily":       daily_list,
-        "top_prompts": top_prompts,
+        "providers":        providers_list,
+        "models":           models_list,
+        "daily":            daily_list,
+        "top_prompts":      top_prompts,
         "cost_by_provider": cost_by_provider,
+        "cost_by_model":    cost_by_model,
     }
 
 
