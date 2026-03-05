@@ -963,10 +963,10 @@ function renderAnalytics(data) {
       <span class="stat-badge indigo">${outPct}% of total</span>
     </div>
     <div class="stat-card amber">
-      <div class="stat-icon">🔌</div>
-      <div class="stat-value">${s.total_providers||0}</div>
-      <div class="stat-label">Providers</div>
-      <span class="stat-badge" style="background:#fef3c7;color:#92400e">${s.total_models||0} models used</span>
+      <div class="stat-icon">💰</div>
+      <div class="stat-value">$${(s.estimated_cost||0).toFixed(4)}</div>
+      <div class="stat-label">Estimated Cost</div>
+      <span class="stat-badge" style="background:#fef3c7;color:#92400e">paid tier pricing</span>
     </div>
   `;
 
